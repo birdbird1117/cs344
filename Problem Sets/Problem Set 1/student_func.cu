@@ -15,7 +15,7 @@
 
 //To convert an image from color to grayscale one simple method is to
 //set the intensity to the average of the RGB channels.  But we will
-//use a more sophisticated method that takes into account how the eye 
+//use a more sophisticated method that takes into account how the eye
 //perceives color and weights the channels unequally.
 
 //The eye responds most strongly to green followed by red and then blue.
@@ -24,7 +24,7 @@
 
 //I = .299f * R + .587f * G + .114f * B
 
-//Notice the trailing f's on the numbers which indicate that they are 
+//Notice the trailing f's on the numbers which indicate that they are
 //single precision floating point constants and not double precision
 //constants.
 
@@ -50,6 +50,15 @@ void rgba_to_greyscale(const uchar4* const rgbaImage,
   //First create a mapping from the 2D block and grid locations
   //to an absolute 2D location in the image, then use that to
   //calculate a 1D offset
+
+  int idx_x = (blockIdx.x*blockDim.x + threadIdx.x);
+  int idx_y = (blockIdx.y*blockDim.y + threadIdx.y);
+
+  if( (idx_x < numRows) && (idx_y < numCols )) {
+    uchar4 rgba = rgbaImage[idx_x * numCols + idx_y];
+    float channelSum = .299f * rgba.x + .587f * rgba.y + .114f * rgba.z;
+    greyImage[idx_x * numCols + idx_y] = channelSum;
+  }
 }
 
 void your_rgba_to_greyscale(const uchar4 * const h_rgbaImage, uchar4 * const d_rgbaImage,
@@ -57,10 +66,12 @@ void your_rgba_to_greyscale(const uchar4 * const h_rgbaImage, uchar4 * const d_r
 {
   //You must fill in the correct sizes for the blockSize and gridSize
   //currently only one block with one thread is being launched
-  const dim3 blockSize(1, 1, 1);  //TODO
-  const dim3 gridSize( 1, 1, 1);  //TODO
+  const dim3 blockSize(16,32,1);
+  int nrow = numRows/blockSize.x + 1;
+  int ncol = numCols/blockSize.y + 1;
+  const dim3 gridSize(nrow, ncol, 1);  //TODO
   rgba_to_greyscale<<<gridSize, blockSize>>>(d_rgbaImage, d_greyImage, numRows, numCols);
-  
+
   cudaDeviceSynchronize(); checkCudaErrors(cudaGetLastError());
 
 }
