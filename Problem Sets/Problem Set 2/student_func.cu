@@ -159,7 +159,7 @@ void gaussian_blur(const unsigned char* const inputChannel,
        }
       }
 
-      outputChannel[image_r * numCols + image_c] = result;
+      outputChannel[idx_1D] = result;
 
 
 
